@@ -18,7 +18,7 @@ import six
 import zipfile
 
 from CTFd import utils, challenges
-from CTFd.models import db, Challenges, Teams, Solves, WrongKeys
+from CTFd.models import db, Challenges, Teams, Solves # , WrongKeys
 from CTFd.utils import is_admin, get_app_config
 from CTFd.utils.decorators import (
     authed_only,
@@ -330,16 +330,16 @@ def export_feedbacks_csv():
             teams = Teams.query.all()
             for team in teams:
                 solve = Solves.query.filter(and_(Solves.chalid==challenge.id, Solves.teamid==team.id)).first()
-                wrongkeys = WrongKeys.query.filter(and_(WrongKeys.chalid==challenge.id, WrongKeys.teamid==team.id)).all()
-                answer = ChallengeFeedbackAnswers.query.filter(and_(ChallengeFeedbackAnswers.questionid==question.id, ChallengeFeedbackAnswers.teamid==team.id)).first()
-                fields = [challenge.id, challenge.name, challenge.description, challenge.category, challenge.max_attempts, challenge.value]
+                # wrongkeys = WrongKeys.query.filter(and_(WrongKeys.chalid==challenge.id, WrongKeys.teamid==team.id)).all()
+                # answer = ChallengeFeedbackAnswers.query.filter(and_(ChallengeFeedbackAnswers.questionid==question.id, ChallengeFeedbackAnswers.teamid==team.id)).first()
+                # fields = [challenge.id, challenge.name, challenge.description, challenge.category, challenge.max_attempts, challenge.value]
                 fields.extend([team.id, team.name, team.email])
                 if solve is None:
                     fields.extend([0, ''])
-                    fields.append(len(wrongkeys))
+                    #fields.append(len(wrongkeys))
                 else:
                     fields.extend([1, solve.date])
-                    fields.append(len(wrongkeys) + 1)
+                    #fields.append(len(wrongkeys) + 1)
                 fields.extend([question.id, question.question, ('Rating' if question.inputtype==0 else 'Text'), question.extraarg1, question.extraarg2])
                 if answer is None:
                     fields.extend(['', ''])
