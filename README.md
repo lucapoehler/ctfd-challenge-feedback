@@ -12,7 +12,7 @@ For instructors to collect feedbacks for challenges to make adjustments or impro
 
 Copy or clone this repository into CTFd/plugins:
 
-`git clone https://github.com/nus-ncl/ctfd-challenge-feedback.git`
+`git clone https://github.com/lucapoehler/ctfd-challenge-feedback.git`
 
 ## Features
 
