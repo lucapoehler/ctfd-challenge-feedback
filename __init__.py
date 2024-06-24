@@ -25,7 +25,7 @@ from CTFd.utils.decorators import (
     admins_only,
     during_ctf_time_only,
     require_verified_emails,
-    viewable_without_authentication
+    #  viewable_without_authentication
 )
 
 from sqlalchemy.sql import and_, expression
@@ -65,7 +65,7 @@ def load(app):
     app.register_blueprint(challenge_feedback)
     app.register_blueprint(challenge_feedback_static, url_prefix='/challenge-feedback')
 
-    utils.register_plugin_script("/challenge-feedback/static/challenge-feedback-chal-window.js")
+    utils.plugins.register_script("/challenge-feedback/static/challenge-feedback-chal-window.js")
 
     @app.route('/admin/plugins/challenge-feedback', methods=['GET'])
     @admins_only
@@ -92,17 +92,14 @@ def load(app):
 
     @app.route('/chal/<int:chalid>/feedbacks', methods=['GET'])
     @require_verified_emails
-    @viewable_without_authentication(status_code=403)
+    # @viewable_without_authentication(status_code=403)
     def chal_feedbacks(chalid):
         teamid = session.get('id')
         # Get solved challenge ids
         solves = []
-        if utils.user_can_view_challenges():
-            if utils.authed():
-                solves = Solves.query\
-                    .join(Teams, Solves.teamid == Teams.id)\
-                    .filter(Solves.teamid == session['id'])\
-                    .all()
+        # if utils.config.challenges_visible():
+        if utils.user.authed():
+        	solves = Solves.query.all()
         solve_ids = []
         for solve in solves:
             solve_ids.append(solve.chalid)
@@ -135,19 +132,16 @@ def load(app):
 
     @app.route('/chal/<int:chalid>/feedbacks/answer', methods=['POST'])
     @require_verified_emails
-    @viewable_without_authentication(status_code=403)
+    # @viewable_without_authentication(status_code=403)
     def chal_feedback_answer(chalid):
         teamid = session.get('id')
         success_msg = "Thank you for your feedback"
 
         # Get solved challenge ids
         solves = []
-        if utils.user_can_view_challenges():
-            if utils.authed():
-                solves = Solves.query\
-                    .join(Teams, Solves.teamid == Teams.id)\
-                    .filter(Solves.teamid == session['id'])\
-                    .all()
+        #if utils.config.challenges_visible():
+        if utils.user.authed():
+        	solves = Solves.query.all()
         solve_ids = []
         for solve in solves:
             solve_ids.append(solve.chalid)
@@ -157,7 +151,7 @@ def load(app):
         for feedback in ChallengeFeedbackQuestions.query.filter_by(chalid=chalid).all():
             feedback_ids.append(feedback.id)
 
-        if (utils.authed() and utils.is_verified() and chalid in solve_ids):
+        if (utils.user.authed() and chalid in solve_ids):
             for name, value in request.form.iteritems():
                 name_tokens = name.split("-")
                 if name_tokens[0] == "feedback":
@@ -276,7 +270,7 @@ def load(app):
     @admins_only
     def admin_export_feedbacks():
         backup = export_feedbacks()
-        ctf_name = utils.ctf_name()
+        ctf_name = utils.config.ctf_name()
         day = datetime.datetime.now().strftime("%Y-%m-%d")
         full_name = "{}.{}_feedbacks.zip".format(ctf_name, day)
         return send_file(backup, as_attachment=True, attachment_filename=full_name)
@@ -285,7 +279,7 @@ def load(app):
     @admins_only
     def admin_export_feedbacks_csv():
         backup = export_feedbacks_csv()
-        ctf_name = utils.ctf_name()
+        ctf_name = utils.config.ctf_name()
         day = datetime.datetime.now().strftime("%Y-%m-%d")
         full_name = "{}.{}_feedbacks.csv".format(ctf_name, day)
         return send_file(backup, as_attachment=True, attachment_filename=full_name, cache_timeout=5)
