@@ -18,7 +18,6 @@ import six
 import zipfile
 
 from CTFd import utils, challenges
-from CTFd.challenges import challenges_view
 from CTFd.models import db, Challenges, Teams, Solves, WrongKeys
 from CTFd.utils import is_admin, get_app_config
 from CTFd.utils.decorators import (
