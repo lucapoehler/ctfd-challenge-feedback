@@ -32,14 +32,14 @@ from sqlalchemy.sql import and_, expression
 
 class ChallengeFeedbackQuestions(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    chalid = db.Column(db.Integer, db.ForeignKey('challenges.id'))
+    challenge_id = db.Column(db.Integer, db.ForeignKey('challenges.id'))
     question = db.Column(db.String(100), nullable=False)
     inputtype = db.Column(db.Integer)
     extraarg1 = db.Column(db.String(100))
     extraarg2 = db.Column(db.String(100))
 
-    def __init__(self, chalid, question, inputtype, extraarg1, extraarg2):
-        self.chalid = chalid
+    def __init__(self, challenge_id, question, inputtype, extraarg1, extraarg2):
+        self.challenge_id = challenge_id
         self.question = question
         self.inputtype = inputtype
         self.extraarg1 = extraarg1
@@ -74,11 +74,11 @@ def load(app):
         return render_template('challenge-feedback-config.html', challenges=challenges)
 
 
-    @app.route('/admin/chal/<int:chalid>/feedbacks', methods=['GET'])
+    @app.route('/admin/chal/<int:challenge_id>/feedbacks', methods=['GET'])
     @admins_only
-    def admin_chal_feedbacks(chalid):
+    def admin_chal_feedbacks(challenge_id):
         feedbacks = []
-        for feedback in ChallengeFeedbackQuestions.query.filter_by(chalid=chalid).all():
+        for feedback in ChallengeFeedbackQuestions.query.filter_by(challenge_id=challenge_id).all():
             feedbacks.append({
                 'id': feedback.id, 
                 'question': feedback.question, 
@@ -90,10 +90,10 @@ def load(app):
         data['feedbacks'] = feedbacks
         return jsonify(data)
 
-    @app.route('/chal/<int:chalid>/feedbacks', methods=['GET'])
+    @app.route('/chal/<int:challenge_id>/feedbacks', methods=['GET'])
     @require_verified_emails
     # @viewable_without_authentication(status_code=403)
-    def chal_feedbacks(chalid):
+    def chal_feedbacks(challenge_id):
         teamid = session.get('id')
         # Get solved challenge ids
         solves = []
@@ -102,15 +102,15 @@ def load(app):
         	solves = Solves.query.all()
         solve_ids = []
         for solve in solves:
-            solve_ids.append(solve.chalid)
+            solve_ids.append(solve.challenge_id)
 
         # Return nothing if challenge is not solved
-        if chalid not in solve_ids:
+        if challenge_id not in solve_ids:
             return jsonify([])
 
         # Otherwise, return the feedback questions
         feedbacks = []
-        for feedback in ChallengeFeedbackQuestions.query.filter_by(chalid=chalid).all():
+        for feedback in ChallengeFeedbackQuestions.query.filter_by(challenge_id=challenge_id).all():
             answer_entry = ChallengeFeedbackAnswers.query.filter(and_(
                 ChallengeFeedbackAnswers.questionid==feedback.id, 
                 ChallengeFeedbackAnswers.teamid==teamid
@@ -130,10 +130,10 @@ def load(app):
         data['feedbacks'] = feedbacks
         return jsonify(data)
 
-    @app.route('/chal/<int:chalid>/feedbacks/answer', methods=['POST'])
+    @app.route('/chal/<int:challenge_id>/feedbacks/answer', methods=['POST'])
     @require_verified_emails
     # @viewable_without_authentication(status_code=403)
-    def chal_feedback_answer(chalid):
+    def chal_feedback_answer(challenge_id):
         teamid = session.get('id')
         success_msg = "Thank you for your feedback"
 
@@ -144,14 +144,14 @@ def load(app):
         	solves = Solves.query.all()
         solve_ids = []
         for solve in solves:
-            solve_ids.append(solve.chalid)
+            solve_ids.append(solve.challenge_id)
 
         # Get feedback ids for this challenge
         feedback_ids = []
-        for feedback in ChallengeFeedbackQuestions.query.filter_by(chalid=chalid).all():
+        for feedback in ChallengeFeedbackQuestions.query.filter_by(challenge_id=challenge_id).all():
             feedback_ids.append(feedback.id)
 
-        if (utils.user.authed() and chalid in solve_ids):
+        if (utils.user.authed() and challenge_id in solve_ids):
             for name, value in request.form.iteritems():
                 name_tokens = name.split("-")
                 if name_tokens[0] == "feedback":
@@ -223,7 +223,7 @@ def load(app):
 
             json_data = {
                 'id': feedback.id,
-                'chalid': feedback.chalid,
+                'challenge_id': feedback.challenge_id,
                 'question': feedback.question,
                 'type': feedback.inputtype
             }
@@ -236,7 +236,7 @@ def load(app):
                 for feedback in feedbacks:
                     json_data.append({
                         'id': feedback.id,
-                        'chalid': feedback.chalid,
+                        'challenge_id': feedback.challenge_id,
                         'question': feedback.question,
                         'type': feedback.inputtype,
                         'extraarg1' : feedback.extraarg1,
@@ -245,19 +245,19 @@ def load(app):
                 return jsonify({'results': json_data})
             elif request.method == 'POST':
                 question = request.form.get('question')
-                chalid = int(request.form.get('chal'))
+                challenge_id = int(request.form.get('chal'))
                 inputtype = int(request.form.get('type') or -1)
                 extraarg1 = ""
                 extraarg2 = ""
                 if inputtype == 0:
                     extraarg1 = request.form.get('ratinglowlabel')
                     extraarg2 = request.form.get('ratinghighlabel')
-                feedback = ChallengeFeedbackQuestions(chalid=chalid, question=question, inputtype=inputtype, extraarg1=extraarg1, extraarg2=extraarg2)
+                feedback = ChallengeFeedbackQuestions(challenge_id=challenge_id, question=question, inputtype=inputtype, extraarg1=extraarg1, extraarg2=extraarg2)
                 db.session.add(feedback)
                 db.session.commit()
                 json_data = {
                     'id': feedback.id,
-                    'chalid': feedback.chalid,
+                    'challenge_id': feedback.challenge_id,
                     'question': feedback.question,
                     'type': feedback.inputtype,
                     'extraarg1' : feedback.extraarg1,
@@ -319,12 +319,12 @@ def export_feedbacks_csv():
     output_lines.append("challenge_id,challenge,challenge_desc,challenge_category,challenge_maxattempts,challenge_value,team_id,team,team_email,is_solved,solve_timestamp,num_attempts,feedback_question_id,feedback_question,feedback_question_type,feedback_question_arg1,feedback_question_arg2,feedback_answer,feedback_answer_timestamp")
     challenges = Challenges.query.all()
     for challenge in challenges:
-        questions = ChallengeFeedbackQuestions.query.filter_by(chalid=challenge.id).all()
+        questions = ChallengeFeedbackQuestions.query.filter_by(challenge_id=challenge.id).all()
         for question in questions:
             teams = Teams.query.all()
             for team in teams:
-                solve = Solves.query.filter(and_(Solves.chalid==challenge.id, Solves.teamid==team.id)).first()
-                # wrongkeys = WrongKeys.query.filter(and_(WrongKeys.chalid==challenge.id, WrongKeys.teamid==team.id)).all()
+                solve = Solves.query.filter(and_(Solves.challenge_id==challenge.id, Solves.teamid==team.id)).first()
+                # wrongkeys = WrongKeys.query.filter(and_(WrongKeys.challenge_id==challenge.id, WrongKeys.teamid==team.id)).all()
                 # answer = ChallengeFeedbackAnswers.query.filter(and_(ChallengeFeedbackAnswers.questionid==question.id, ChallengeFeedbackAnswers.teamid==team.id)).first()
                 # fields = [challenge.id, challenge.name, challenge.description, challenge.category, challenge.max_attempts, challenge.value]
                 fields.extend([team.id, team.name, team.email])
