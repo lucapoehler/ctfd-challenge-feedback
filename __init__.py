@@ -19,7 +19,7 @@ import zipfile
 
 from CTFd import utils, challenges
 from CTFd.models import db, Challenges, Teams, Solves # , WrongKeys
-from CTFd.utils import is_admin, get_app_config
+from CTFd.utils import get_app_config # is_admin, 
 from CTFd.utils.decorators import (
     authed_only,
     admins_only,
